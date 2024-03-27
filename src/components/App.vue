@@ -1,10 +1,9 @@
 <template>
     <h1>Minimal Vue Webpack</h1>
-    <tree />
+    <router-view />
 </template>
 
 <script setup>
-import tree from "./tree/tree.vue";
 
 </script>
 

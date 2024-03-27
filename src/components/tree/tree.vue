@@ -1,5 +1,5 @@
 <template>
-  <tree :value="nodes" class="tree" loadingMode="icon" @node-expand="onNodeExpand">
+  <tree v-model:expandedKeys="expandedKeys" :value="nodes" class="tree" loadingMode="icon" @node-expand="onNodeExpand">
     <template #togglericon="{ node, expanded }">
         <fai v-if="expanded && (!node.children || node.children.length > 0)" icon="angle-down" size="sm" />
         <fai v-else-if="!node.children || node.children.length > 0" icon="angle-right" size="sm" />
@@ -26,25 +26,73 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { NodeService } from '../../services/NodeService';
+import { ROOT_TREE_ELEMENT_ID } from "../../common/constants";
 
 const nodes = ref(null);
 const router = useRouter();
+const route = useRoute();
+const expandedKeys = ref({});
 
 onMounted(() => {
-    NodeService.getTreeNodes().then((data) => (nodes.value = data));
+    loadTrees();
 });
+
+const loadTrees = () => {
+    NodeService.getTreeNodes().then((data) => (nodes.value = data));
+
+    const { treeId, id, parentId, target } = route.params;
+
+    if(treeId && id && parentId && parentId !== ROOT_TREE_ELEMENT_ID) { // tree element or group & parent is not tree root
+        NodeService.getTreeWithParentsNodes(
+          treeId,
+          target === "te" ? id : parentId,
+          target === "tg"
+        ).then(treewithParents => {
+            nodes.value.splice(
+            nodes.value.findIndex((node) => node.key === treeId),
+                1,
+                treewithParents
+            );
+            openTreeItem(treeId, id, parentId);
+        });
+    } else if (treeId) { // tree root or group & parent is tree root
+        expandedKeys.value[treeId] = true;
+        if (id && parentId && parentId === ROOT_TREE_ELEMENT_ID) {
+            expandedKeys.value[id] = true;
+        }
+    }
+};
+
+const openTreeItem = (treeId, id, parentId) => {
+    const expandNode = (node) => {
+        if(node.key === id && node.ancestors.length > 0 && node.ancestors[node.ancestors.length - 1].key === parentId) {
+            node.ancestors.forEach(ancestor =>{
+                expandedKeys.value[ancestor.key] = true;
+            });
+            expandedKeys.value[node.key] = true;
+        } else if (node.children) {
+            for (let child of node.children) {
+                expandNode(child);
+            }
+        }
+    };
+    const selectedTree = nodes.value.find(node => node.key === treeId);
+    expandNode(selectedTree);
+}
 
 const onNodeExpand = (node) => {
     router.replace({ path: node.path });
     if (!node.children) {
         node.childrenLoading = true;
-        if(node.type === "group") {
-            NodeService.getTreeElementsNodes(node).then((data) => {
-                node.children = data;
-                node.childrenLoading = false;
-            });
+        if (node.type === "group") {
+            if (!node.children || node.children.length === 0) {
+                NodeService.getTreeElementsNodes(node).then((data) => {
+                    node.children = data;
+                    node.childrenLoading = false;
+                });
+            }
         } else if (node.type === "element") {
             setTimeout(() => {
                 node.children = [];

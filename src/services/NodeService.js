@@ -1,8 +1,10 @@
+import { ROOT_TREE_ELEMENT_ID } from "../common/constants";
+
 export const NodeService = {
 
     getTreeNodes() {
         return this.getTrees().then((trees) => {
-            return trees.map(tree => ({
+            const treeNodes = trees.map(tree => ({
                 key: tree.treeId,
                 label: tree.name,
                 data: tree,
@@ -10,16 +12,20 @@ export const NodeService = {
                 leaf: false,
                 path: "/tree/" + tree.treeId,
                 ancestors: [],
-                children: tree.groups?.map(group => ({
+                children: []
+            }));
+            treeNodes.forEach(node => {
+                node.children = node.data.groups?.map(group => ({
                     key: group.treeGroupId,
                     label: group.name,
                     data: group,
                     type: "group",
                     leaf: false,
-                    path: "/tree/" + tree.treeId + "/tg/65e0daee-c7bf-4201-a7c9-5ea53b9745bb/" + group.treeGroupId,
-                    ancestors: [tree.treeId],
+                    path: "/tree/" + node.key + "/tg/" + ROOT_TREE_ELEMENT_ID + "/" + group.treeGroupId,
+                    ancestors: [node],
                 }))
-            }));
+            });
+            return treeNodes;
         });
     },
 
@@ -31,9 +37,61 @@ export const NodeService = {
                 data: element,
                 type: "element",
                 leaf: false,
-                path: "/tree/" + node.ancestors[0] + "/te/" + node.data.treeGroupId + "/" + element.treeElementId,
-                ancestors: [...node.ancestors, node.data.treeGroupId],
+                path: "/tree/" + node.ancestors[0].key + "/te/" + node.key + "/" + element.treeElementId,
+                ancestors: [...node.ancestors, node],
             }));
+        });
+    },
+
+    getTreeWithParentsNodes(treeId, treeElementId, loadChildTreeGroup = false) {
+        return this.getTreeWithParents(treeId, treeElementId, loadChildTreeGroup).then(tree => {
+            debugger;
+            const mapToNode = (item, parent) => {
+                let mappedItem = null;
+                if(item.treeGroupId) {
+                    mappedItem = {
+                        key: item.treeGroupId,
+                        label: item.name,
+                        data: { ...item },
+                        type: "group",
+                        leaf: false,
+                        path: "/tree/" + (parent.ancestors.length > 0 ? parent.ancestors[0].key : parent.key) + "/tg/" + (parent.data.treeElementId ? parent.data.treeElementId : ROOT_TREE_ELEMENT_ID) + "/" + item.treeGroupId,
+                        ancestors: [...parent.ancestors, parent]
+                    };
+                    if(item.groups.length > 0) {
+                        mappedItem.children = item.groups.map(child => mapToNode(child, mappedItem));
+                    }
+                } else if (item.treeElementId) {
+                    mappedItem = {
+                        key: item.treeElementId,
+                        label: item.name,
+                        data: { ...item },
+                        type: "element",
+                        leaf: false,
+                        path: "/tree/" + parent.ancestors[0].key + "/te/" + parent.key + "/" + item.treeElementId,
+                        ancestors: [...parent.ancestors, parent]
+                    };
+                    if(item.groups.length > 0 || item.treeElementId === treeElementId) {
+                        mappedItem.children = item.groups.map(child => mapToNode(child, mappedItem));
+                        if (loadChildTreeGroup) {
+                            // get groups
+                        }
+                    }
+                } else {
+                    mappedItem = {
+                        key: item.treeId,
+                        label: item.name,
+                        data: { ...item },
+                        type: "root",
+                        leaf: false,
+                        path: "/tree/" + item.treeId,
+                        ancestors: []
+                    };
+                    mappedItem.children = item.groups.map(child => mapToNode(child, mappedItem));
+                }
+                return mappedItem;
+            }
+            return mapToNode(tree);
         });
     },
 
@@ -439,6 +497,94 @@ export const NodeService = {
                                     }
                                 }
                             ]
+                        }
+                    ]
+                });
+            }, 2000)
+        });
+    },
+
+    getTreeWithParents(treeId, treeElementId, loadChildTreeGroup = false) { 
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve({
+                    "customerId": "bmwadvantage",
+                    "name": "BMW Advantage default",
+                    "treeId": "580c77d9-e1d1-4448-b978-18446ba5be7a",
+                    "groups": [
+                        {
+                            "groupBy": "environment",
+                            "groups": [
+                                {
+                                    "parentId": "7b870267-9fbb-4315-8c2c-80f6ae7df766",
+                                    "name": "Prod Servers Unix",
+                                    "status": "error",
+                                    "treeElementId": "0c8d3749-579e-3f79-895c-58351e079cf7",
+                                    "groupStatusSummary": [
+                                        {
+                                            "name": "Service",
+                                            "treeGroupId": "b0f1c9d3-3265-4cb9-9641-27d7e092c92a",
+                                            "summary": {
+                                                "disabled": 2,
+                                                "ok": 533,
+                                                "error": 28,
+                                                "maintenance": 0,
+                                                "warning": 9
+                                            }
+                                        }
+                                    ],
+                                    "groups": []
+                                },
+                                {
+                                    "parentId": "7b870267-9fbb-4315-8c2c-80f6ae7df766",
+                                    "name": "Prod Servers Windows",
+                                    "status": "ok",
+                                    "treeElementId": "530568cd-d69f-3910-b92d-790fa8977166",
+                                    "groupStatusSummary": [
+                                        {
+                                            "name": "Service",
+                                            "treeGroupId": "b0f1c9d3-3265-4cb9-9641-27d7e092c92a",
+                                            "summary": {
+                                                "disabled": 0,
+                                                "ok": 25,
+                                                "error": 0,
+                                                "maintenance": 0,
+                                                "warning": 0
+                                            }
+                                        }
+                                    ],
+                                    "groups": []
+                                },
+                                {
+                                    "parentId": "7b870267-9fbb-4315-8c2c-80f6ae7df766",
+                                    "name": "SSD Infrastructure",
+                                    "status": "ok",
+                                    "treeElementId": "dfdbb003-81fa-3441-bff0-b6be969ecff0",
+                                    "groupStatusSummary": [
+                                        {
+                                            "name": "Service",
+                                            "treeGroupId": "b0f1c9d3-3265-4cb9-9641-27d7e092c92a",
+                                            "summary": {
+                                                "disabled": 0,
+                                                "ok": 3,
+                                                "error": 0,
+                                                "maintenance": 0,
+                                                "warning": 0
+                                            }
+                                        }
+                                    ],
+                                    "groups": []
+                                }
+                            ],
+                            "name": "Environment",
+                            "statusCalculation": {
+                                "calculationType": "redundant",
+                                "percentage": 1
+                            },
+                            "treeGroupId": "7b870267-9fbb-4315-8c2c-80f6ae7df766",
+                            "filter": {},
+                            "linkedPages": [],
+                            "slas": []
                         }
                     ]
                 });

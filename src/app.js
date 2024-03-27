@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faList, faAngleRight, faAngleDown, faEllipsisV, faCircle } from "@fortawesome/free-solid-svg-icons";
 import { faClone as farClone } from "@fortawesome/free-regular-svg-icons";
+import routes from "./common/routes";
 import './style/main.css';    //Import css files as modules
 import 'primevue/resources/themes/aura-light-green/theme.css';
 import 'primeicons/primeicons.css';
@@ -15,7 +16,7 @@ import 'primeicons/primeicons.css';
 const app = createApp(App);
 const router = createRouter({
     history: createWebHashHistory(),
-    routes: []
+    routes: routes
 });
 app.use(router);
 app.use(PrimeVue);
