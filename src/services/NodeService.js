@@ -48,7 +48,7 @@ export const NodeService = {
             debugger;
             const mapToNode = (item, parent) => {
                 let mappedItem = null;
-                if(item.treeGroupId) {
+                if (item.treeGroupId) {
                     mappedItem = {
                         key: item.treeGroupId,
                         label: item.name,
@@ -58,7 +58,7 @@ export const NodeService = {
                         path: "/tree/" + (parent.ancestors.length > 0 ? parent.ancestors[0].key : parent.key) + "/tg/" + (parent.data.treeElementId ? parent.data.treeElementId : ROOT_TREE_ELEMENT_ID) + "/" + item.treeGroupId,
                         ancestors: [...parent.ancestors, parent]
                     };
-                    if(item.groups.length > 0) {
+                    if (item.groups.length > 0) {
                         mappedItem.children = item.groups.map(child => mapToNode(child, mappedItem));
                     }
                 } else if (item.treeElementId) {
@@ -71,7 +71,7 @@ export const NodeService = {
                         path: "/tree/" + parent.ancestors[0].key + "/te/" + parent.key + "/" + item.treeElementId,
                         ancestors: [...parent.ancestors, parent]
                     };
-                    if(item.groups.length > 0 || item.treeElementId === treeElementId) {
+                    if (item.groups.length > 0 || item.treeElementId === treeElementId) {
                         mappedItem.children = item.groups.map(child => mapToNode(child, mappedItem));
                         if (loadChildTreeGroup) {
                             // get groups
@@ -92,6 +92,37 @@ export const NodeService = {
                 return mappedItem;
             }
             return mapToNode(tree);
+        });
+    },
+    getNewTreeNodes() {
+        let x = this.getNewTree();
+        return [{
+            key: x.treeId,
+            data: x,
+            icon: 'pi pi-fw pi-inbox',
+            type: "root",
+            leaf: false,
+            children: []
+        }]
+    },
+
+    getTreeNodesbyId(id) {
+        return this.getTrees().then((trees) => {
+            const resultTree = trees.filter((tree) => tree.treeId === id);
+            return resultTree.map(tree => ({
+                key: tree.treeId,
+                data: tree,
+                icon: 'pi pi-fw pi-inbox',
+                type: "root",
+                leaf: false,
+                children: tree.groups?.map(group => ({
+                    key: group.treeGroupId,
+                    data: group,
+                    icon: 'pi pi-fw pi-inbox',
+                    type: "group",
+                    leaf: false
+                }))
+            }));
         });
     },
 
@@ -434,7 +465,7 @@ export const NodeService = {
         });
     },
 
-    getTreeElements(treeId, parentTreeElementId, groupId) { 
+    getTreeElements(treeId, parentTreeElementId, groupId) {
         return new Promise(resolve => {
             setTimeout(() => {
                 resolve({
@@ -504,7 +535,7 @@ export const NodeService = {
         });
     },
 
-    getTreeWithParents(treeId, treeElementId, loadChildTreeGroup = false) { 
+    getTreeWithParents(treeId, treeElementId, loadChildTreeGroup = false) {
         return new Promise(resolve => {
             setTimeout(() => {
                 resolve({
@@ -590,5 +621,15 @@ export const NodeService = {
                 });
             }, 2000)
         });
+    },
+    getNewTree() {
+        return {
+            name: "new Tree",
+            groups: [],
+            sharedWith: [],
+            customerId: "",
+            treeId: "newTree",
+            treeElementId: "65e0daee-c7bf-4201-a7c9-5ea53b9745bb"
+        };
     }
 };
