@@ -1,5 +1,4 @@
 <template>
-    <h1>Minimal Vue Webpack</h1>
     <router-view />
 </template>
 
