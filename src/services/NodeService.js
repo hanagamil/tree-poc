@@ -45,7 +45,6 @@ export const NodeService = {
 
     getTreeWithParentsNodes(treeId, treeElementId, loadChildTreeGroup = false) {
         return this.getTreeWithParents(treeId, treeElementId, loadChildTreeGroup).then(tree => {
-            debugger;
             const mapToNode = (item, parent) => {
                 let mappedItem = null;
                 if (item.treeGroupId) {

@@ -23,7 +23,6 @@
 
     onMounted(() => {
         EventBus.$on("breadcrumb-items-update", (updatedItems) => {
-            debugger;
             items.value = updatedItems
           });
     });
