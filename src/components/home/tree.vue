@@ -1,6 +1,5 @@
 <template>
-
-    <div class="flex flex-column align-items-cente">
+    <div v-if="mode !== 'resourceSelect'" class="flex flex-column align-items-center">
         <div v-if="!editMode && !addMode" class="flex flex-wrap gap-2 mb-4">
             <button type="button" @click="edit">Edit!</button>
             <button type="button" @click="add">Add!</button>
@@ -13,7 +12,7 @@
         </div>
     </div>
     
-    <vue-tree v-model:expandedKeys="expandedKeys" v-model:selectionKeys="selectionKeys" :value="nodes" class="tree" loadingMode="icon"
+    <vue-tree v-model:expandedKeys="expandedKeys" v-model:selectionKeys="selectionKeys" :value="filteredNodes" class="tree" loadingMode="icon"
         @node-expand="onNodeExpand" :expanded-keys="expandedKeys">
         <template #togglericon="{ node, expanded }">
             <fai v-if="expanded && (!node.children || node.children.length > 0)" icon="angle-down" size="sm" />
@@ -37,6 +36,7 @@
             <fai class="tree-icon filter-icon" icon="ellipsis-v" />
             <span v-if="node.children && node.children.length > 0" class="tree-num">{{ "(#" + node.children.length +
             ")" }}</span>
+            <fai v-if="mode === 'resourceSelect'" class="tree-icon" icon="plus" @click="emit('add', node.data)" />
             <i v-if="node.childrenLoading" class="pi pi-spin pi-spinner"></i>
             <div v-if="editMode || addMode">
                 <fai class="tree-icon" icon="trash" @click="deleteNode" />
@@ -50,6 +50,7 @@
                 <fai v-else class="tree-icon" icon="list" />
                 <span class="tree-label">{{ node.data.name }}</span>
             </span>
+            <fai v-if="mode === 'resourceSelect'" class="tree-icon" icon="plus" @click="emit('add', node.data)" />
             <i v-if="node.childrenLoading" class="pi pi-spin pi-spinner"></i>
             <div v-if="editMode || addMode">
                 <fai class="tree-icon" icon="trash" @click="deleteNode" />
@@ -60,11 +61,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineProps, defineEmits, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { NodeService } from '../../services/NodeService';
 import { ROOT_TREE_ELEMENT_ID } from "../../common/constants";
 import EventBus from "../../common/eventBus";
+
+const props = defineProps(["mode", "customerId"]);
+const emit = defineEmits(["add"]);
 
 const nodes = ref(null);
 const router = useRouter();
@@ -78,6 +82,12 @@ const breadcrumbItems = ref([]);
 onMounted(() => {
     EventBus.$on("breadcrumb-item-clicked", breadcrumbItemClicked);
     loadTrees();
+});
+
+const filteredNodes = computed(() => {
+    return ["view", "resourceSelect"].includes(props.mode) && props.customerId && props.customerId !== ""
+      ? nodes.value.filter((node) => node.data.customerId === props.customerId)
+      : nodes.value;
 });
 
 const updateBreadcrumbItems = (node) => {
