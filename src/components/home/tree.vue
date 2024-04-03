@@ -33,7 +33,8 @@
                 <fai class="tree-icon" :icon="['far', 'clone']" />
                 <span class="tree-label">{{ node.data.name }}</span>
             </span>
-            <fai class="tree-icon filter-icon" icon="ellipsis-v" />
+            <fai v-if="!node.filtered" class="tree-icon filter-icon" icon="ellipsis-v" @click="filterModal = !filterModal; openFilterModal(node)" />
+            <fai v-if="node.filtered" class="tree-icon filter-icon" icon="filter" @click="filterModal = !filterModal; openFilterModal(node)" />
             <span v-if="node.children && node.children.length > 0" class="tree-num">{{ "(#" + node.children.length +
             ")" }}</span>
             <fai v-if="mode === 'resourceSelect'" class="tree-icon" icon="plus" @click="emit('add', node.data)" />
@@ -58,6 +59,18 @@
             </div>
         </template>
     </vue-tree>
+
+    <b-modal 
+        v-model="filterModal" 
+        size="lg" 
+        ok-title="Apply"
+        cancel-title="Reset"
+        :title="filterGroupNode ? filterGroupNode.data.name : ''"
+        @ok="applyFilter"
+        @cancel="resetFilter"
+    >
+        <p class="my-2">Filter Modal</p>
+    </b-modal>
 </template>
 
 <script setup>
@@ -78,6 +91,8 @@ const selectionKeys = ref({});
 const editMode = ref(false);
 const addMode = ref(false);
 const breadcrumbItems = ref([]);
+const filterModal = ref(false);
+const filterGroupNode = ref(null);
 
 onMounted(() => {
     EventBus.$on("breadcrumb-item-clicked", breadcrumbItemClicked);
@@ -197,10 +212,12 @@ const onNodeClicked = (node, e) => {
             openNode(node);
         }
     }
-    router.replace({ path: node.path });
     selectionKeys.value = {};
     selectionKeys.value[node.key] = true;
-    updateBreadcrumbItems(node);
+    if (props.mode !== "resourceSelect") {
+        router.replace({ path: node.path });
+        updateBreadcrumbItems(node);
+    }
 };
 
 const edit = () => {
@@ -243,9 +260,22 @@ const deleteNode = (e) => {
     e.stopPropagation();
     alert("delete");
 }
+
 const addNode = (e) => {
     e.stopPropagation();
     alert("add Node");
+}
+
+const openFilterModal = (node) => {
+    filterGroupNode.value = node;
+};
+
+const applyFilter = () => {
+    filterGroupNode.value.filtered = true;
+}
+
+const resetFilter = () => {
+    filterGroupNode.value.filtered = false;
 }
 
 </script>

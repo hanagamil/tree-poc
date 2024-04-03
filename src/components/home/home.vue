@@ -8,12 +8,6 @@
                 <breadcrumbs />
             </b-col>
         </b-row>
-        <hr />
-        <b-row>
-            <b-col>
-                <flat-tree :selected="[]" />
-            </b-col>
-        </b-row>
     </b-container>
     
 </template>
