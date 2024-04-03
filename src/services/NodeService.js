@@ -93,35 +93,43 @@ export const NodeService = {
             return mapToNode(tree);
         });
     },
-    getNewTreeNodes() {
-        let x = this.getNewTree();
-        return [{
-            key: x.treeId,
-            data: x,
-            icon: 'pi pi-fw pi-inbox',
+
+    getNewTreeNode() {
+        const newTree = this.getNewTree()
+        return {
+            key: newTree.treeId,
+            label: newTree.name,
+            data: newTree,
             type: "root",
             leaf: false,
+            ancestors: [],
             children: []
-        }]
+        };
     },
 
-    getTreeNodesbyId(id) {
+    getTreeNodebyId(id) {
         return this.getTrees().then((trees) => {
-            const resultTree = trees.filter((tree) => tree.treeId === id);
-            return resultTree.map(tree => ({
-                key: tree.treeId,
-                data: tree,
-                icon: 'pi pi-fw pi-inbox',
+            const foundTree = trees.find((tree) => tree.treeId === id);
+            const treeNode =  {
+                key: foundTree.treeId,
+                label: foundTree.name,
+                data: foundTree,
                 type: "root",
                 leaf: false,
-                children: tree.groups?.map(group => ({
-                    key: group.treeGroupId,
-                    data: group,
-                    icon: 'pi pi-fw pi-inbox',
-                    type: "group",
-                    leaf: false
-                }))
+                path: "/tree/" + foundTree.treeId,
+                ancestors: [],
+                children: []
+            };
+            treeNode.children = treeNode.data.groups?.map(group => ({
+                key: group.treeGroupId,
+                label: group.name,
+                data: group,
+                type: "group",
+                leaf: false,
+                path: "/tree/" + treeNode.key + "/tg/" + ROOT_TREE_ELEMENT_ID + "/" + group.treeGroupId,
+                ancestors: [treeNode],
             }));
+            return treeNode;
         });
     },
 
@@ -621,14 +629,14 @@ export const NodeService = {
             }, 2000)
         });
     },
+
     getNewTree() {
         return {
             name: "new Tree",
             groups: [],
             sharedWith: [],
             customerId: "",
-            treeId: "newTree",
-            treeElementId: "65e0daee-c7bf-4201-a7c9-5ea53b9745bb"
+            treeId: "newTree"
         };
     }
 };

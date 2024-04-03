@@ -1,13 +1,13 @@
 <template>
     <div v-if="mode !== 'resourceSelect'" class="flex flex-column align-items-center">
         <div v-if="!editMode && !addMode" class="flex flex-wrap gap-2 mb-4">
-            <button type="button" @click="edit">Edit!</button>
-            <button type="button" @click="add">Add!</button>
+            <b-button type="button" @click="edit">Edit!</b-button>
+            <b-button type="button" @click="add">Add!</b-button>
 
         </div>
         <div v-else class="flex flex-wrap gap-2 mb-4">
-            <button type="button" @click="cancel">Cancel!</button>
-            <button type="button" @click="Save">Save!</button>
+            <b-button type="button" @click="cancel">Cancel!</b-button>
+            <b-button type="button" @click="Save">Save!</b-button>
 
         </div>
     </div>
@@ -21,17 +21,17 @@
         <template #root="{ node }">
             <span class="tree-selectable" @click="(e) => onNodeClicked(node, e)">
                 <fai class="tree-icon" icon="list" />
-                <span class="tree-label">{{ node.data.name }}</span>
+                <span class="tree-label">{{ node.label }}</span>
             </span>
-            <div v-if="editMode || addMode">
+            <span v-if="editMode || addMode">
                 <fai class="tree-icon" icon="trash" @click="deleteNode" />
                 <fai class="tree-icon" icon="plus" @click="addNode" />
-            </div>
+            </span>
         </template>
         <template #group="{ node }">
             <span class="tree-selectable" @click="(e) => onNodeClicked(node, e)">
                 <fai class="tree-icon" :icon="['far', 'clone']" />
-                <span class="tree-label">{{ node.data.name }}</span>
+                <span class="tree-label">{{ node.label }}</span>
             </span>
             <fai v-if="!node.filtered" class="tree-icon filter-icon" icon="ellipsis-v" @click="filterModal = !filterModal; openFilterModal(node)" />
             <fai v-if="node.filtered" class="tree-icon filter-icon" icon="filter" @click="filterModal = !filterModal; openFilterModal(node)" />
@@ -39,24 +39,24 @@
             ")" }}</span>
             <fai v-if="mode === 'resourceSelect'" class="tree-icon" icon="plus" @click="emit('add', node.data)" />
             <i v-if="node.childrenLoading" class="pi pi-spin pi-spinner"></i>
-            <div v-if="editMode || addMode">
+            <span v-if="editMode || addMode">
                 <fai class="tree-icon" icon="trash" @click="deleteNode" />
                 <fai class="tree-icon" icon="plus" @click="addNode" />
-            </div>
+            </span>
         </template>
         <template #element="{ node }">
             <span class="tree-selectable" @click="(e) => onNodeClicked(node, e)">
                 <fai v-if="node.data.status" class="tree-icon status-icon" :class="`text-${node.data.status}`"
                 icon="circle" />
                 <fai v-else class="tree-icon" icon="list" />
-                <span class="tree-label">{{ node.data.name }}</span>
+                <span class="tree-label">{{ node.label }}</span>
             </span>
             <fai v-if="mode === 'resourceSelect'" class="tree-icon" icon="plus" @click="emit('add', node.data)" />
             <i v-if="node.childrenLoading" class="pi pi-spin pi-spinner"></i>
-            <div v-if="editMode || addMode">
+            <span v-if="editMode || addMode">
                 <fai class="tree-icon" icon="trash" @click="deleteNode" />
                 <fai class="tree-icon" icon="plus" @click="addNode" />
-            </div>
+            </span>
         </template>
     </vue-tree>
 
@@ -65,7 +65,7 @@
         size="lg" 
         ok-title="Apply"
         cancel-title="Reset"
-        :title="filterGroupNode ? filterGroupNode.data.name : ''"
+        :title="filterGroupNode ? filterGroupNode.label : ''"
         @ok="applyFilter"
         @cancel="resetFilter"
     >
@@ -108,7 +108,7 @@ const filteredNodes = computed(() => {
 const updateBreadcrumbItems = (node) => {
     if (node) {
         breadcrumbItems.value = [];
-        node.ancestors.forEach(ancestor => {
+        node.ancestors?.forEach(ancestor => {
             breadcrumbItems.value.push(ancestor);
         })
         breadcrumbItems.value.push(node);
@@ -221,49 +221,39 @@ const onNodeClicked = (node, e) => {
 };
 
 const edit = () => {
-    editMode.value = true;
-    // console.log(node);
-    nodes.value[0].data.name = "Updated Node 1.1";
+    // nodes.value[0].data.name = "Updated Node 1.1";
     const treeId = "580c77d9-e1d1-4448-b978-18446ba5be7a";
-    NodeService.getTreeNodesbyId(treeId).then((data) => {
-        nodes.value = data;
-        console.log(nodes.value);
-
+    NodeService.getTreeNodebyId(treeId).then((data) => {
+        nodes.value = [data];
+        editMode.value = true;
     });
 
 };
 
 const add = () => {
-    alert("add");
     addMode.value = true;
-    let data = NodeService.getNewTreeNodes()
-    nodes.value = data;
-    console.log(nodes.value);
+    nodes.value = [NodeService.getNewTreeNode()];
 };
 
 const cancel = () => {
     addMode.value = false;
     editMode.value = false;
-    alert("cancle");
     NodeService.getTreeNodes().then((data) => {
-        (nodes.value = data);
+        nodes.value = data;
     })
 };
 
 const save = () => {
     addMode.value = false;
     editMode.value = false;
-    alert("save");
 }
 
 const deleteNode = (e) => {
     e.stopPropagation();
-    alert("delete");
 }
 
 const addNode = (e) => {
     e.stopPropagation();
-    alert("add Node");
 }
 
 const openFilterModal = (node) => {
@@ -339,7 +329,7 @@ const resetFilter = () => {
 .tree li .pi-spinner {
     margin: 0 10px;
     font-size: 14px;
-    vertical-align: bottom;
+    vertical-align: baseline;
 }
 
 .tree li .tree-num {

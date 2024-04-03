@@ -29,7 +29,7 @@
 
     const breadcrumbItems = computed(() => {
         return items.value.map((item) => ({
-            text: item.data.name ?? "",
+            text: item.label ?? "",
             status: item.data.status
         }));
     });
