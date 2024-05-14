@@ -73,199 +73,218 @@
     </b-modal>
 </template>
 
-<script setup>
-import { ref, onMounted, defineProps, defineEmits, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+<script lang="ts">
+import { Vue, Component } from "vue-facing-decorator";
+// import { Vue, Options } from "vue-class-component";
+// import { ref, onMounted, defineProps, defineEmits, computed } from 'vue';
+// import { useRouter, useRoute } from 'vue-router';
 import { NodeService } from '../../services/NodeService';
 import { ROOT_TREE_ELEMENT_ID } from "../../common/constants";
 import EventBus from "../../common/eventBus";
 
-const props = defineProps(["mode", "customerId"]);
-const emit = defineEmits(["add"]);
-
-const nodes = ref(null);
-const router = useRouter();
-const route = useRoute();
-const expandedKeys = ref({});
-const selectionKeys = ref({});
-const editMode = ref(false);
-const addMode = ref(false);
-const breadcrumbItems = ref([]);
-const filterModal = ref(false);
-const filterGroupNode = ref(null);
-
-onMounted(() => {
-    EventBus.$on("breadcrumb-item-clicked", breadcrumbItemClicked);
-    loadTrees();
-});
-
-const filteredNodes = computed(() => {
-    return ["view", "resourceSelect"].includes(props.mode) && props.customerId && props.customerId !== ""
-      ? nodes.value.filter((node) => node.data.customerId === props.customerId)
-      : nodes.value;
-});
-
-const updateBreadcrumbItems = (node) => {
-    if (node) {
-        breadcrumbItems.value = [];
-        node.ancestors?.forEach(ancestor => {
-            breadcrumbItems.value.push(ancestor);
-        })
-        breadcrumbItems.value.push(node);
-        EventBus.$emit("breadcrumb-items-update", breadcrumbItems.value);
+@Component ({
+    name: "Tree",
+    props: {
+        mode: {
+            type: String
+        },
+        customerId: {
+            type: String
+        }
     }
-};
+})
+export default class Tree extends Vue {
 
-const breadcrumbItemClicked = (node) => {
-    onNodeClicked(node);
-};
+    // const props = defineProps(["mode", "customerId"]);
+    // const emit = defineEmits(["add"]);
 
-const loadTrees = () => {
-    NodeService.getTreeNodes().then((data) => {
-        nodes.value = data
+    public mode!: string;
+    public customerId!: string;
 
-        const { treeId, id, parentId, target } = route.params;
+    public nodes = null;
+    // public router = useRouter();
+    // public route = useRoute();
+    public expandedKeys = {};
+    public selectionKeys = {};
+    public editMode = false;
+    public addMode = false;
+    public breadcrumbItems = [];
+    public filterModal = false;
+    public filterGroupNode = null;
 
-        if (treeId && id && parentId && parentId !== ROOT_TREE_ELEMENT_ID) { // tree element or group & parent is not tree root
-            NodeService.getTreeWithParentsNodes(
-                treeId,
-                target === "te" ? id : parentId,
-                target === "tg"
-            ).then(treewithParents => {
-                nodes.value.splice(
-                    nodes.value.findIndex((node) => node.key === treeId),
-                    1,
-                    treewithParents
-                );
-                openTreeItem(treeId, id, parentId);
-            });
-        } else if (treeId) { // tree root or group & parent is tree root
-            selectionKeys.value = {};
-            selectionKeys.value[treeId] = true;
-            expandedKeys.value[treeId] = true;
-            const selectedTree = nodes.value.find(node => node.key === treeId);
-            updateBreadcrumbItems(selectedTree);
-            if (id && parentId && parentId === ROOT_TREE_ELEMENT_ID) {
-                selectionKeys.value = {};
-                selectionKeys.value[id] = true;
-                expandedKeys.value[id] = true;
-                updateBreadcrumbItems(nodes.value.find(node => node.key === treeId));
-                const selectedGroup = selectedTree.children.find(child => child.key === id);
-                updateBreadcrumbItems(selectedGroup);
-            }
+    public mounted() {
+        EventBus.$on("breadcrumb-item-clicked", this.breadcrumbItemClicked);
+        this.loadTrees();
+    }
+
+    public get filteredNodes () {
+        return ["view", "resourceSelect"].includes(this.mode) && this.customerId && this.customerId !== ""
+        ? this.nodes.filter((node) => node.data.customerId === this.customerId)
+        : this.nodes;
+    }
+
+    public updateBreadcrumbItems (node) {
+        if (node) {
+            this.breadcrumbItems = [];
+            node.ancestors?.forEach(ancestor => {
+                this.breadcrumbItems.push(ancestor);
+            })
+            this.breadcrumbItems.push(node);
+            EventBus.$emit("breadcrumb-items-update", this.breadcrumbItems);
         }
-    });
-};
+    }
 
-const openTreeItem = (treeId, id, parentId) => {
-    const expandNode = (node) => {
-        if (node.key === id && node.ancestors.length > 0 && node.ancestors[node.ancestors.length - 1].key === parentId) {
-            node.ancestors.forEach(ancestor => {
-                selectionKeys.value = {};
-                selectionKeys.value[node.key] = true;
-                expandedKeys.value[ancestor.key] = true;
-            });
-            expandedKeys.value[node.key] = true;
-            updateBreadcrumbItems(node);
-        } else if (node.children) {
-            for (let child of node.children) {
-                expandNode(child);
-            }
-        }
-    };
-    const selectedTree = nodes.value.find(node => node.key === treeId);
-    expandNode(selectedTree);
-}
+    public breadcrumbItemClicked (node) {
+        this.onNodeClicked(node);
+    }
 
-const openNode = (node) => {
-    if (!node.children) {
-        node.childrenLoading = true;
-        if (node.type === "group") {
-            if (!node.children || node.children.length === 0) {
-                NodeService.getTreeElementsNodes(node).then((data) => {
-                    node.children = data;
-                    node.childrenLoading = false;
+    public loadTrees () {
+        NodeService.getTreeNodes().then((data) => {
+            this.nodes = data
+
+            const { treeId, id, parentId, target } = this.$route.params;
+
+            if (treeId && id && parentId && parentId !== ROOT_TREE_ELEMENT_ID) { // tree element or group & parent is not tree root
+                NodeService.getTreeWithParentsNodes(
+                    treeId,
+                    target === "te" ? id : parentId,
+                    target === "tg"
+                ).then(treewithParents => {
+                    this.nodes.splice(
+                        this.nodes.findIndex((node) => node.key === treeId),
+                        1,
+                        treewithParents
+                    );
+                    this.openTreeItem(treeId, id, parentId);
                 });
+            } else if (treeId) { // tree root or group & parent is tree root
+                this.selectionKeys = {};
+                this.selectionKeys[treeId] = true;
+                this.expandedKeys[treeId] = true;
+                const selectedTree = this.nodes.find(node => node.key === treeId);
+                this.updateBreadcrumbItems(selectedTree);
+                if (id && parentId && parentId === ROOT_TREE_ELEMENT_ID) {
+                    this.selectionKeys = {};
+                    this.selectionKeys[id] = true;
+                    this.expandedKeys[id] = true;
+                    this.updateBreadcrumbItems(this.nodes.find(node => node.key === treeId));
+                    const selectedGroup = selectedTree.children.find(child => child.key === id);
+                    this.updateBreadcrumbItems(selectedGroup);
+                }
             }
-        } else if (node.type === "element") {
-            setTimeout(() => {
-                node.children = [];
-                node.childrenLoading = false;
-            }, 2000);
+        });
+    }
+
+    public openTreeItem (treeId, id, parentId) {
+        const expandNode = (node) => {
+            if (node.key === id && node.ancestors.length > 0 && node.ancestors[node.ancestors.length - 1].key === parentId) {
+                node.ancestors.forEach(ancestor => {
+                    this.selectionKeys = {};
+                    this.selectionKeys[node.key] = true;
+                    this.expandedKeys[ancestor.key] = true;
+                });
+                this.expandedKeys[node.key] = true;
+                this.updateBreadcrumbItems(node);
+            } else if (node.children) {
+                for (let child of node.children) {
+                    expandNode(child);
+                }
+            }
+        };
+        const selectedTree = this.nodes.find(node => node.key === treeId);
+        expandNode(selectedTree);
+    }
+
+    public openNode (node) {
+        if (!node.children) {
+            node.childrenLoading = true;
+            if (node.type === "group") {
+                if (!node.children || node.children.length === 0) {
+                    NodeService.getTreeElementsNodes(node).then((data) => {
+                        node.children = data;
+                        node.childrenLoading = false;
+                    });
+                }
+            } else if (node.type === "element") {
+                setTimeout(() => {
+                    node.children = [];
+                    node.childrenLoading = false;
+                }, 2000);
+            }
         }
     }
-};
 
-const onNodeExpand = (node) => {
-    selectionKeys.value = {};
-    selectionKeys.value[node.key] = true;
-    if(selectionKeys.value[node.key]) {
-        openNode(node);
-    }
-};
-
-const onNodeClicked = (node, e) => {
-    if (e) {
-        e.preventDefault();
-        expandedKeys.value[node.key] = expandedKeys.value[node.key] ? !expandedKeys.value[node.key]: true;
-        if(expandedKeys.value[node.key]) {
-            openNode(node);
+    public onNodeExpand (node) {
+        this.selectionKeys = {};
+        this.selectionKeys[node.key] = true;
+        if(this.selectionKeys[node.key]) {
+            this.openNode(node);
         }
     }
-    selectionKeys.value = {};
-    selectionKeys.value[node.key] = true;
-    if (props.mode !== "resourceSelect") {
-        router.replace({ path: node.path });
-        updateBreadcrumbItems(node);
+
+    public onNodeClicked (node, e) {
+        if (e) {
+            e.preventDefault();
+            this.expandedKeys[node.key] = this.expandedKeys[node.key] ? !this.expandedKeys[node.key]: true;
+            if(this.expandedKeys[node.key]) {
+                this.openNode(node);
+            }
+        }
+        this.selectionKeys = {};
+        this.selectionKeys[node.key] = true;
+        if (this.mode !== "resourceSelect") {
+            this.$router.replace({ path: node.path });
+            this.updateBreadcrumbItems(node);
+        }
     }
-};
 
-const edit = () => {
-    // nodes.value[0].data.name = "Updated Node 1.1";
-    const treeId = "580c77d9-e1d1-4448-b978-18446ba5be7a";
-    NodeService.getTreeNodebyId(treeId).then((data) => {
-        nodes.value = [data];
-        editMode.value = true;
-    });
+    public edit () {
+        // this.nodes[0].data.name = "Updated Node 1.1";
+        const treeId = "580c77d9-e1d1-4448-b978-18446ba5be7a";
+        NodeService.getTreeNodebyId(treeId).then((data) => {
+            this.nodes = [data];
+            this.editMode = true;
+        });
 
-};
+    }
 
-const add = () => {
-    addMode.value = true;
-    nodes.value = [NodeService.getNewTreeNode()];
-};
+    public add () {
+        this.addMode = true;
+        this.nodes = [NodeService.getNewTreeNode()];
+    }
 
-const cancel = () => {
-    addMode.value = false;
-    editMode.value = false;
-    NodeService.getTreeNodes().then((data) => {
-        nodes.value = data;
-    })
-};
+    public cancel () {
+        this.addMode = false;
+        this.editMode = false;
+        NodeService.getTreeNodes().then((data) => {
+            this.nodes = data;
+        })
+    }
 
-const save = () => {
-    addMode.value = false;
-    editMode.value = false;
-}
+    public save () {
+        this.addMode = false;
+        this.editMode = false;
+    }
 
-const deleteNode = (e) => {
-    e.stopPropagation();
-}
+    public deleteNode (e) {
+        e.stopPropagation();
+    }
 
-const addNode = (e) => {
-    e.stopPropagation();
-}
+    public addNode (e) {
+        e.stopPropagation();
+    }
 
-const openFilterModal = (node) => {
-    filterGroupNode.value = node;
-};
+    public openFilterModal (node) {
+        this.filterGroupNode = node;
+    }
 
-const applyFilter = () => {
-    filterGroupNode.value.filtered = true;
-}
+    public applyFilter () {
+        this.filterGroupNode.filtered = true;
+    }
 
-const resetFilter = () => {
-    filterGroupNode.value.filtered = false;
+    public resetFilter () {
+        this.filterGroupNode.filtered = false;
+    }
 }
 
 </script>

@@ -23,7 +23,23 @@ module.exports = {
             //Vue loader. Says to webpack that files with .vue extension need to be processed by the vue-loader plugin
             {
                 test: /\.vue$/,
-                loader: 'vue-loader'
+                loader: 'vue-loader',
+                options: {
+                    loaders: {
+                      ts: "ts-loader"
+                    },
+                    // this is to have the src-option of a b-img tag resolved corrctly
+                    esModule: true
+                }
+            },
+            {
+                test: /(\.ts|\.js)$/,
+                loader: "ts-loader",
+                exclude: /node_modules|config\.js/,
+                options: {
+                  happyPackMode: true,
+                  appendTsSuffixTo: [/\.vue$/]
+                }
             },
             //CSS loaders. Make possible import css files as js modules 
             {

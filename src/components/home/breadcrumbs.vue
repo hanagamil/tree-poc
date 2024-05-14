@@ -14,28 +14,44 @@
   </div>
 </template>
 
-<script setup>
-    import { ref, onMounted, computed } from 'vue';
+<script lang="ts">
+    import { Vue } from "vue-class-component";
+    // import { ref, onMounted, computed } from 'vue';
     import { getIconFromEventType } from "../../common/constants";
     import EventBus from "../../common/eventBus";
 
-    let items = ref([]);
+    export default class Breadcrumbs extends Vue {
+      public items = [];
 
-    onMounted(() => {
+      public mounted() {
         EventBus.$on("breadcrumb-items-update", (updatedItems) => {
-            items.value = updatedItems
-          });
-    });
+              this.items = updatedItems
+            });
+      }
 
-    const breadcrumbItems = computed(() => {
-        return items.value.map((item) => ({
-            text: item.label ?? "",
-            status: item.data.status
-        }));
-    });
+      // onMounted(() => {
+      //     EventBus.$on("breadcrumb-items-update", (updatedItems) => {
+      //         items.value = updatedItems
+      //       });
+      // });
 
-    const breadcrumbClicked = (index) => {
-        EventBus.$emit("breadcrumb-item-clicked", items.value[index]);
+      public get breadcrumbItems() {
+          return this.items.map((item) => ({
+              text: item.label ?? "",
+              status: item.data.status
+          }));
+      };
+
+      // const breadcrumbItems = computed(() => {
+      //     return items.value.map((item) => ({
+      //         text: item.label ?? "",
+      //         status: item.data.status
+      //     }));
+      // });
+
+      public breadcrumbClicked(index) {
+          EventBus.$emit("breadcrumb-item-clicked", this.items[index]);
+      }
     }
 </script>
 
