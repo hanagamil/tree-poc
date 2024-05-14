@@ -7,25 +7,22 @@
                         {{ tree.text }}
                     </b-dropdown-item>
                 </b-dropdown>
-
                 <b-button type="button" @click="add">Add!</b-button>
             </div>
 
         </div>
         <div v-else class="flex flex-wrap gap-2 mb-4">
             <b-button type="button" @click="cancel">Cancel!</b-button>
-            <b-button type="button" @click="Save">Save!</b-button>
-
+            <b-button type="button" @click="save">Save!</b-button>
         </div>
     </div>
-    <div class="dropdown">
+    <!-- <div class="dropdown">
         <b-dropdown text="Select Customer">
             <b-dropdown-item v-for="customer in customerList" :key="customer" @click="filterByCustomerId(customer)">
                 {{ customer }}
             </b-dropdown-item>
         </b-dropdown>
-    </div>
-
+    </div> -->
     <vue-tree v-model:expandedKeys="expandedKeys" v-model:selectionKeys="selectionKeys" :value="filteredNodes"
         class="tree" loadingMode="icon" @node-expand="onNodeExpand" :expanded-keys="expandedKeys">
         <template #togglericon="{ node, expanded }">
@@ -110,7 +107,7 @@ export default class Tree extends Vue {
     public mode!: string;
     public customerId!: string;
 
-    public nodes = null;
+    public nodes = [];
     // public router = useRouter();
     // public route = useRoute();
     public expandedKeys = {};
@@ -121,7 +118,7 @@ export default class Tree extends Vue {
     public filterModal = false;
     public filterGroupNode = null;
     public customerList = ["bmwadvantage", "mewa", "tkseagpssneu", "vaillant", "sapuc", "test_customer"];
-    public tempnodes = null;
+    // public editNodes = [];
     public treeListOptions = null;
 
     public mounted() {
@@ -130,7 +127,8 @@ export default class Tree extends Vue {
     }
 
     public get filteredNodes () {
-        return ["view", "resourceSelect"].includes(this.mode) && this.customerId && this.customerId !== ""
+        debugger;
+        return ["view", "resourceSelect"].includes(this.mode) && this.customerId
         ? this.nodes.filter((node) => node.data.customerId === this.customerId)
         : this.nodes;
     }
@@ -153,7 +151,7 @@ export default class Tree extends Vue {
     public loadTrees () {
         NodeService.getTreeNodes().then((data) => {
             this.nodes = data
-            this.tempnodes = this.nodes;
+            // this.editNodes = this.nodes;
             this.setTreeListOptions();
             const { treeId, id, parentId, target } = this.$route.params;
 
@@ -252,15 +250,8 @@ export default class Tree extends Vue {
     }
 
     public edit (treeId) {
-        this.nodes = this.tempnodes.filter((node) => node.key === treeId);
+        this.nodes = this.nodes.filter((node) => node.key === treeId);
         this.editMode = true;
-        // this.nodes[0].data.name = "Updated Node 1.1";
-        // const treeId = "580c77d9-e1d1-4448-b978-18446ba5be7a";
-        // NodeService.getTreeNodebyId(treeId).then((data) => {
-        //     this.nodes = [data];
-        //     this.editMode = true;
-        // });
-
     }
 
     public add () {
@@ -279,6 +270,9 @@ export default class Tree extends Vue {
     public save () {
         this.addMode = false;
         this.editMode = false;
+        NodeService.getTreeNodes().then((data) => {
+            this.nodes = data;
+        })
     }
 
     public deleteNode (e) {
@@ -301,10 +295,11 @@ export default class Tree extends Vue {
         this.filterGroupNode.filtered = false;
     }
 
-    public filterByCustomerId (customerId) {
-        let filterdtree = this.tempnodes.filter((node) => node.data.customerId === customerId);
-        this.nodes = filterdtree;
-    }
+    // @Watch("customerId")
+    // public filterByCustomerId (customerId) {
+    //     // let filterdtree = this.tempnodes.filter((node) => node.data.customerId === customerId);
+    //     // this.nodes = filterdtree;
+    // }
 
     public setTreeListOptions () {
         this.treeListOptions = this.nodes.map(({ key, label }) => ({

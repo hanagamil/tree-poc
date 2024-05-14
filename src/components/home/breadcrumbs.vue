@@ -22,6 +22,7 @@
 
     export default class Breadcrumbs extends Vue {
       public items = [];
+      public getIconFromEventType = getIconFromEventType;
 
       public mounted() {
         EventBus.$on("breadcrumb-items-update", (updatedItems) => {
