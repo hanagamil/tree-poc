@@ -107,31 +107,6 @@ export const NodeService = {
         };
     },
 
-    getTreeNodebyId(id) {
-        return this.getTrees().then((trees) => {
-            const foundTree = trees.find((tree) => tree.treeId === id);
-            const treeNode =  {
-                key: foundTree.treeId,
-                label: foundTree.name,
-                data: foundTree,
-                type: "root",
-                leaf: false,
-                path: "/tree/" + foundTree.treeId,
-                ancestors: [],
-                children: []
-            };
-            treeNode.children = treeNode.data.groups?.map(group => ({
-                key: group.treeGroupId,
-                label: group.name,
-                data: group,
-                type: "group",
-                leaf: false,
-                path: "/tree/" + treeNode.key + "/tg/" + ROOT_TREE_ELEMENT_ID + "/" + group.treeGroupId,
-                ancestors: [treeNode],
-            }));
-            return treeNode;
-        });
-    },
 
     getTrees() {
         return new Promise(resolve => {

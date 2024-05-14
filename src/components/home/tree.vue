@@ -1,8 +1,15 @@
 <template>
     <div v-if="mode !== 'resourceSelect'" class="flex flex-column align-items-center">
         <div v-if="!editMode && !addMode" class="flex flex-wrap gap-2 mb-4">
-            <b-button type="button" @click="edit">Edit!</b-button>
-            <b-button type="button" @click="add">Add!</b-button>
+            <div v-if="treeListOptions !== null">
+                <b-dropdown :no-caret="true" text="Edit!">
+                    <b-dropdown-item v-for="tree in treeListOptions" :key="tree.key" @click="edit(tree.key)">
+                        {{ tree.text }}
+                    </b-dropdown-item>
+                </b-dropdown>
+
+                <b-button type="button" @click="add">Add!</b-button>
+            </div>
 
         </div>
         <div v-else class="flex flex-wrap gap-2 mb-4">
@@ -11,9 +18,16 @@
 
         </div>
     </div>
-    
-    <vue-tree v-model:expandedKeys="expandedKeys" v-model:selectionKeys="selectionKeys" :value="filteredNodes" class="tree" loadingMode="icon"
-        @node-expand="onNodeExpand" :expanded-keys="expandedKeys">
+    <div class="dropdown">
+        <b-dropdown text="Select Customer">
+            <b-dropdown-item v-for="customer in customerList" :key="customer" @click="filterByCustomerId(customer)">
+                {{ customer }}
+            </b-dropdown-item>
+        </b-dropdown>
+    </div>
+
+    <vue-tree v-model:expandedKeys="expandedKeys" v-model:selectionKeys="selectionKeys" :value="filteredNodes"
+        class="tree" loadingMode="icon" @node-expand="onNodeExpand" :expanded-keys="expandedKeys">
         <template #togglericon="{ node, expanded }">
             <fai v-if="expanded && (!node.children || node.children.length > 0)" icon="angle-down" size="sm" />
             <fai v-else-if="!node.children || node.children.length > 0" icon="angle-right" size="sm" />
@@ -33,10 +47,12 @@
                 <fai class="tree-icon" :icon="['far', 'clone']" />
                 <span class="tree-label">{{ node.label }}</span>
             </span>
-            <fai v-if="!node.filtered" class="tree-icon filter-icon" icon="ellipsis-v" @click="filterModal = !filterModal; openFilterModal(node)" />
-            <fai v-if="node.filtered" class="tree-icon filter-icon" icon="filter" @click="filterModal = !filterModal; openFilterModal(node)" />
+            <fai v-if="!node.filtered" class="tree-icon filter-icon" icon="ellipsis-v"
+                @click="filterModal = !filterModal; openFilterModal(node)" />
+            <fai v-if="node.filtered" class="tree-icon filter-icon" icon="filter"
+                @click="filterModal = !filterModal; openFilterModal(node)" />
             <span v-if="node.children && node.children.length > 0" class="tree-num">{{ "(#" + node.children.length +
-            ")" }}</span>
+        ")" }}</span>
             <fai v-if="mode === 'resourceSelect'" class="tree-icon" icon="plus" @click="emit('add', node.data)" />
             <i v-if="node.childrenLoading" class="pi pi-spin pi-spinner"></i>
             <span v-if="editMode || addMode">
@@ -47,7 +63,7 @@
         <template #element="{ node }">
             <span class="tree-selectable" @click="(e) => onNodeClicked(node, e)">
                 <fai v-if="node.data.status" class="tree-icon status-icon" :class="`text-${node.data.status}`"
-                icon="circle" />
+                    icon="circle" />
                 <fai v-else class="tree-icon" icon="list" />
                 <span class="tree-label">{{ node.label }}</span>
             </span>
@@ -60,15 +76,8 @@
         </template>
     </vue-tree>
 
-    <b-modal 
-        v-model="filterModal" 
-        size="lg" 
-        ok-title="Apply"
-        cancel-title="Reset"
-        :title="filterGroupNode ? filterGroupNode.label : ''"
-        @ok="applyFilter"
-        @cancel="resetFilter"
-    >
+    <b-modal v-model="filterModal" size="lg" ok-title="Apply" cancel-title="Reset"
+        :title="filterGroupNode ? filterGroupNode.label : ''" @ok="applyFilter" @cancel="resetFilter">
         <p class="my-2">Filter Modal</p>
     </b-modal>
 </template>
@@ -111,6 +120,9 @@ export default class Tree extends Vue {
     public breadcrumbItems = [];
     public filterModal = false;
     public filterGroupNode = null;
+    public customerList = ["bmwadvantage", "mewa", "tkseagpssneu", "vaillant", "sapuc", "test_customer"];
+    public tempnodes = null;
+    public treeListOptions = null;
 
     public mounted() {
         EventBus.$on("breadcrumb-item-clicked", this.breadcrumbItemClicked);
@@ -141,7 +153,8 @@ export default class Tree extends Vue {
     public loadTrees () {
         NodeService.getTreeNodes().then((data) => {
             this.nodes = data
-
+            this.tempnodes = this.nodes;
+            this.setTreeListOptions();
             const { treeId, id, parentId, target } = this.$route.params;
 
             if (treeId && id && parentId && parentId !== ROOT_TREE_ELEMENT_ID) { // tree element or group & parent is not tree root
@@ -238,13 +251,15 @@ export default class Tree extends Vue {
         }
     }
 
-    public edit () {
+    public edit (treeId) {
+        this.nodes = this.tempnodes.filter((node) => node.key === treeId);
+        this.editMode = true;
         // this.nodes[0].data.name = "Updated Node 1.1";
-        const treeId = "580c77d9-e1d1-4448-b978-18446ba5be7a";
-        NodeService.getTreeNodebyId(treeId).then((data) => {
-            this.nodes = [data];
-            this.editMode = true;
-        });
+        // const treeId = "580c77d9-e1d1-4448-b978-18446ba5be7a";
+        // NodeService.getTreeNodebyId(treeId).then((data) => {
+        //     this.nodes = [data];
+        //     this.editMode = true;
+        // });
 
     }
 
@@ -284,6 +299,18 @@ export default class Tree extends Vue {
 
     public resetFilter () {
         this.filterGroupNode.filtered = false;
+    }
+
+    public filterByCustomerId (customerId) {
+        let filterdtree = this.tempnodes.filter((node) => node.data.customerId === customerId);
+        this.nodes = filterdtree;
+    }
+
+    public setTreeListOptions () {
+        this.treeListOptions = this.nodes.map(({ key, label }) => ({
+                key: key,
+                text: label
+            }));
     }
 }
 
